@@ -1,0 +1,259 @@
+===== ISAFLIX KATALOG BAĞLANTILARI =====
+313-
+314-        if (data === previousData) return data;
+315-
+316-        window.ISA_Catalog_CATALOG = data;
+317-        window.dispatchEvent(new CustomEvent(
+318:            'isa:catalog-catalog-updated',
+319-            {detail:data}
+320-        ));
+321-
+322-        if (!silent) {
+323-            const status = document.getElementById('isa-live-status');
+--
+344-    catalogTimerStarted = true;
+345-
+346-    loadCachedCatalogCatalog().then(cached => {
+347-        if (cached) {
+348-            window.dispatchEvent(new CustomEvent(
+349:                'isa:catalog-catalog-updated',
+350-                {detail: cached}
+351-            ));
+352-        }
+353-
+354-        refreshCatalogCatalog(true);
+--
+2480-    {id:'nowtv',url:'https://www.nowtv.com.tr/',kind:'series'}
+2481-];
+2482-
+2483-const ISAFLIX_WEB_CACHE_KEY = 'isaflix-web-discovery-v1';
+2484-
+2485:function isaFlixCatalog() {
+2486:    return window.__ISAFLIX_WEB_CATALOG || {movies:[],series:[]};
+2487-}
+2488-
+2489-function isaFlixNormalizeTitle(value) {
+2490-    return String(value || '')
+2491-        .replace(/<[^>]*>/g,' ')
+--
+2590-    }
+2591-
+2592-    return found;
+2593-}
+2594-
+2595:async function isaFlixDiscoverWebCatalog() {
+2596-    const empty = {movies:[],series:[]};
+2597-
+2598-    try {
+2599-        const cached = localStorage.getItem(ISAFLIX_WEB_CACHE_KEY);
+2600-        if (cached) {
+2601-            const parsed = JSON.parse(cached);
+2602-            if (parsed && Array.isArray(parsed.movies) &&
+2603-                Array.isArray(parsed.series)) {
+2604:                window.__ISAFLIX_WEB_CATALOG = parsed;
+2605-                window.dispatchEvent(new CustomEvent(
+2606:                    'isa:catalog-catalog-updated', {detail:parsed}
+2607-                ));
+2608-            }
+2609-        }
+2610-    } catch (e) {}
+2611-
+--
+2643-        movies:all.filter(x => x.type === 'movie'),
+2644-        series:all.filter(x => x.type === 'series')
+2645-    };
+2646-
+2647-    if (catalog.movies.length || catalog.series.length) {
+2648:        window.__ISAFLIX_WEB_CATALOG = catalog;
+2649-        try {
+2650-            localStorage.setItem(ISAFLIX_WEB_CACHE_KEY, JSON.stringify(catalog));
+2651-        } catch (e) {}
+2652:    } else if (!window.__ISAFLIX_WEB_CATALOG) {
+2653:        window.__ISAFLIX_WEB_CATALOG = empty;
+2654-    }
+2655-
+2656-    window.dispatchEvent(new CustomEvent(
+2657:        'isa:catalog-catalog-updated',
+2658:        {detail:window.__ISAFLIX_WEB_CATALOG}
+2659-    ));
+2660-}
+2661-
+2662-function isaFlixArray(value) {
+2663-    return Array.isArray(value) ? value : [];
+--
+2712-
+2713-function isaFlixRender() {
+2714-    const root = isaFlixRoot();
+2715-    if (!root) return;
+2716-
+2717:    const data = isaFlixCatalog();
+2718-    const modes = [
+2719-        ['movies', 'Filmler', 'fa-film'],
+2720-        ['series', 'Diziler', 'fa-clapperboard']
+2721-    ];
+2722-
+--
+2784-
+2785-    isaFlixRenderItems();
+2786-}
+2787-
+2788-function isaFlixRenderItems() {
+2789:    const data = isaFlixCatalog();
+2790-    const grid = document.getElementById('isaf-grid');
+2791-    const status = document.getElementById('isaf-status');
+2792-    const more = document.getElementById('isaf-more');
+2793-    if (!grid || !status || !more) return;
+2794-
+--
+2890-
+2891-function isaFlixOpenItem(item) {
+2892-    const mode = isaFlixState.mode;
+2893-
+2894-    if (mode === 'live') {
+2895:        const data = isaFlixCatalog();
+2896-        const category = isaFlixCategory(item,'live');
+2897-        const queue = isaFlixArray(data.live_channels)
+2898-            .filter(x => isaFlixCategory(x,'live') === category)
+2899-            .filter(x => /^https?:\/\//i.test(String(x.stream_url||'')))
+2900-            .map(x => ({
+--
+3306-            );
+3307-        };
+3308-    });
+3309-}
+3310-
+3311:window.addEventListener('isa:catalog-catalog-updated', event => {
+3312-    const data = event.detail;
+3313-    if (!data || typeof data !== 'object') return;
+3314-    if (isaFlixRoot()) isaFlixRender();
+3315-});
+3316-
+--
+3321-
+3322-    if (!document.getElementById('isa-flix-app')) {
+3323-        panel.innerHTML = '<div id="isa-flix-app"></div>';
+3324-    }
+3325-
+3326:    const data = isaFlixCatalog();
+3327-
+3328-    if (data && Object.keys(data).length) {
+3329-        isaFlixRender();
+3330-    }
+3331-}
+===== ISAFLIX WEB ÇÖZÜMLEME ÇAĞRILARI =====
+1750-}
+1751-
+1752-
+1753:async function resolveStaticMedia(page, depth=0, visited=new Set()) {
+1754-    if (!isHttp(page) || depth > 2 || visited.has(page)) return null;
+1755-    visited.add(page);
+1756-
+--
+1796-            const child = new URL(iframe[1],page).href;
+1797-            if (!isHttp(child)) continue;
+1798-
+1799:            const found = await resolveStaticMedia(
+1800-                child,
+1801-                depth+1,
+1802-                visited
+--
+1848-    area.prepend(note);
+1849-
+1850-    try {
+1851:        const resolved = await resolveStaticMedia(page);
+1852-
+1853-        note.remove();
+1854-
+--
+1918-    if (root) root.prepend(note);
+1919-
+1920-    try {
+1921:        const resolved = await resolveStaticMedia(page);
+1922-
+1923-        note.remove();
+1924-
+--
+2460-    season: null
+2461-};
+2462-
+2463:const ISAFLIX_WEB_SOURCES = [
+2464-    // FİLM KAYNAKLARI — 7
+2465-    {id:'hdfilmcehennemi2',url:'https://www.hdfilmcehennemi2.biz/',kind:'movie'},
+2466-    {id:'hdfilmcehennemi-nl',url:'https://www.hdfilmcehennemi.nl/',kind:'movie'},
+--
+2527-    const html = await nativeFetch(source.url);
+2528-    if (!html || html.length < 100) return [];
+2529-
+2530:    const doc = new DOMParser().parseFromString(html, 'text/html');
+2531-    const base = new URL(source.url);
+2532-    const found = [];
+2533-    const seen = new Set();
+--
+2612-    const collected = [];
+2613-    let cursor = 0;
+2614-    const workers = Array.from({length:2}, async () => {
+2615:        while (cursor < ISAFLIX_WEB_SOURCES.length) {
+2616:            const source = ISAFLIX_WEB_SOURCES[cursor++];
+2617-            try {
+2618-                const items = await isaFlixDiscoverOneSource(source);
+2619-                collected.push(...items);
+--
+2977-    isaFlixShowSeries(item);
+2978-}
+2979-
+2980:async function isaFlixLoadWebSeries(series) {
+2981-    if (series.__webEpisodesLoaded) return;
+2982-    series.__webEpisodesLoaded = true;
+2983-
+2984-    if (!isHttp(series.page_url)) return;
+2985-
+2986-    const html = await nativeFetch(series.page_url);
+2987:    const doc = new DOMParser().parseFromString(html, 'text/html');
+2988-    const base = new URL(series.page_url);
+2989-    const episodes = [];
+2990-    const seen = new Set();
+--
+3093-    if (!episodes.length && series.page_url && !series.__webEpisodesLoaded) {
+3094-        root.innerHTML = '<p class="isa-loading">Bütün bölümler yükleniyor...</p>';
+3095-
+3096:        isaFlixLoadWebSeries(series)
+3097-            .then(() => isaFlixShowSeries(series))
+3098-            .catch(error => {
+3099-                console.warn('Bölümler yüklenemedi:', error);
+--
+3203-                note.textContent = 'Video hazırlanıyor...';
+3204-                root.prepend(note);
+3205-
+3206:                resolveStaticMedia(episode.page_url)
+3207-                    .then(resolved => {
+3208-                        note.remove();
+3209-                        const playbackUrl = resolved || episode.page_url;
+===== JSON KATALOG ANAHTARLARI =====
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:876:                    item, 'get_live_categories'
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:1170:            'get_live_categories'
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:1453:                xtreamAPI(provider,'get_series_categories').catch(() => [])
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:1543:                episode.season || episode.season_number || 1
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:1610:    const explicit = item.season_number ?? item.season;
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2062:    const auth = await xtreamAPI(source, 'get_live_categories');
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2291:            const catAction = kind === 'film' ? 'get_vod_categories' : 'get_series_categories';
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2337:        for (const ep of list) maxSeason = Math.max(maxSeason,Number(ep.season||ep.season_number||0)||0);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2340:    for (const season of seasons) maxSeason = Math.max(maxSeason,Number(season.season_number||season.season||0)||0);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2400:            const sn=Number(ep.season||ep.season_number||1);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2403:            seasons.get(sn).push({name:(Number(ep.episode_num||ep.episode_number||seasons.get(sn).length+1))+'. Bölüm',season:sn,episode:Number(ep.episode_num||ep.episode_number||seasons.get(sn).length+1),url:source.host.replace(/\/+$/,'')+'/series/'+encodeURIComponent(source.username)+'/'+encodeURIComponent(source.password)+'/'+ep.id+'.'+ext});
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2691:    if (mode === 'live') source = isaFlixArray(data.live_categories);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2692:    if (mode === 'movies') source = isaFlixArray(data.movie_categories);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2693:    if (mode === 'series') source = isaFlixArray(data.series_platforms);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2899:            .filter(x => /^https?:\/\//i.test(String(x.stream_url||'')))
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2902:                url:x.stream_url,
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2909:        const index = queue.findIndex(x => x.url === item.stream_url);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2916:        const url = item.stream_url || item.page_url || item.url || '';
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2921:        if (!item.stream_url && !isDirectMedia(url)) {
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2937:            .filter(x => /^https?:\/\//i.test(String(x.stream_url || '')))
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:2940:                url:x.stream_url,
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3020:            episode.season_number = isaFlixExplicitSeasonNumber(episode);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3021:            episode.episode_number = isaFlixExplicitEpisodeNumber(episode);
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3031:    const raw = item.season_number ?? item.season;
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3060:    const raw = item.episode_number ?? item.episode ?? item.episode_num;
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3192:            const url = episode.stream_url || '';
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3268:                .filter(ep => /^https?:\/\//i.test(String(ep.stream_url || '')))
+app/src/main/assets/isa-tv-hd/js/isa-sources.js:3278:                url: ep.stream_url,
